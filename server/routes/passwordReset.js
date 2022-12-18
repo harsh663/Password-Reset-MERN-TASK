@@ -39,32 +39,32 @@ router.post("/", async (req, res) => {
 
 		// connect to amqp cloud
 		amqp.connect(process.env.RABBITMQ_URI, (err, connection) => {
-			if(err)
+			if (err)
 				throw err;
 
 			// provider
-			connection.createChannel((err1, channel)=> {
-				if(err1)
+			connection.createChannel((err1, channel) => {
+				if (err1)
 					throw err1;
 
-				channel.assertQueue("email", {durable : true});
-				channel.sendToQueue("email", Buffer.from(JSON.stringify({"email" : user.email, url })));
-			});
+				channel.assertQueue("emailq", { durable: true });
+				channel.sendToQueue("emailq", Buffer.from(JSON.stringify({ "email": user.email, url })));
+			}, { noAck: true });
 
 			// consumer
-			connection.createChannel((err1, channel)=> {
-				if(err1)
+			connection.createChannel((err1, channel) => {
+				if (err1)
 					throw err1;
 				// if queue is already present then use it
 				// or create a new queue
-				channel.assertQueue("email", {durable : true});
-				channel.consume("email", (msg) => {
+				channel.assertQueue("emailq", { durable: true });
+				channel.consume("emailq", (msg) => {
 					const parsed = JSON.parse(msg.content.toString());
 					// console.log("Parsed data  = ", parsed);
-		 			sendEmail(parsed.email, "Password Reset", parsed.url);
+					sendEmail(parsed.email, "Password Reset", parsed.url);
 				});
-			}, {noAck: true});
-			
+			}, { noAck: true });
+
 		})
 
 		res
@@ -80,12 +80,14 @@ router.post("/", async (req, res) => {
 router.get("/:id/:token", async (req, res) => {
 	try {
 		const user = await User.findOne({ _id: req.params.id });
+		//if user does	not exist
 		if (!user) return res.status(400).send({ message: "Invalid link" });
-
+		//create new user
 		const token = await Token.findOne({
 			userId: user._id,
 			token: req.params.token,
 		});
+		// check token availability
 		if (!token) return res.status(400).send({ message: "Invalid link" });
 
 		res.status(200).send("Valid Url");
@@ -128,4 +130,5 @@ router.post("/:id/:token", async (req, res) => {
 	}
 });
 
+//exprt router
 module.exports = router;

@@ -7,10 +7,6 @@ const PasswordReset = () => {
 	const [validUrl, setValidUrl] = useState(false);
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
-	// const [currentState,setCurrentState] = useState({disabled:false})
-	// React.state = {disabled:true};
-	const [isValid, setIsValid] = useState(false);
-
 	const [msg, setMsg] = useState("");
 	const [error, setError] = useState("");
 	const param = useParams();
@@ -32,20 +28,18 @@ const PasswordReset = () => {
 		e.preventDefault();
 		console.log(password);
 		console.log(confirmPassword);
-		if(password !== confirmPassword) {
-			// setIsValid(false);
+		if (password !== confirmPassword) {
 			setError("Passwords does not match")
 			return;
 		}
 		setError("");
-		// setIsValid(true);
-		
+
 		try {
 			const { data } = await axios.post(url, { password });
 			setMsg(data.message);
 			setError("");
 			window.location = "/login";
-			
+
 		} catch (error) {
 			if (
 				error.response &&
@@ -57,20 +51,9 @@ const PasswordReset = () => {
 			}
 		}
 	};
-const validate=(e) =>{
-	
-	if(password===confirmPassword) {
-		// this.setState({
-		// 	disabled: false
-		// });
-		// setCurrentState={disabled:false};
-		setIsValid(true);
-		window.location = "/login";
 
-	}
-}
 	return (
-		<Fragment>
+		<>
 			{validUrl ? (
 				<div className={styles.container}>
 					<form className={styles.form_container} >
@@ -95,7 +78,7 @@ const validate=(e) =>{
 						/>
 						{error && <div className={styles.error_msg}>{error}</div>}
 						{msg && <div className={styles.success_msg}>{msg}</div>}
-						<button onClick={(e) => {handleSubmit(e)}}  type="submit" className={styles.green_btn}>
+						<button onClick={(e) => { handleSubmit(e) }} type="submit" className={styles.green_btn}>
 							Submit
 						</button>
 					</form>
@@ -103,7 +86,7 @@ const validate=(e) =>{
 			) : (
 				<h1>404 Not Found</h1>
 			)}
-		</Fragment>
+		</>
 	);
 };
 
