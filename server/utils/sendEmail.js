@@ -1,7 +1,8 @@
 const nodemailer = require("nodemailer");
-
+// Send Mail Using Nodemailer
 module.exports = async (email, subject, text) => {
 	try {
+		// create reusable transporter object using the default SMTP transport
 		const transporter = nodemailer.createTransport({
 			host: process.env.HOST,
 			service: process.env.SERVICE,

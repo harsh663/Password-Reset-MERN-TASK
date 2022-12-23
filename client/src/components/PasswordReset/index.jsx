@@ -58,6 +58,7 @@ const PasswordReset = () => {
 				<div className={styles.container}>
 					<form className={styles.form_container} >
 						<h1>Add New Password</h1>
+						<h6>Set 8-character password.{'\n'} This password includes one uppercase letter, one lowercase letter, one number and one special character.</h6>
 						<input
 							type="password"
 							placeholder="Password"

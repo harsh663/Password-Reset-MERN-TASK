@@ -1,13 +1,14 @@
 const router = require("express").Router();
 const { User } = require("../models/user");
 const Token = require("../models/token");
-const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
+const crypto = require("crypto");
+// for password complexity
 const Joi = require("joi");
 const passwordComplexity = require("joi-password-complexity");
+// bcrypt to hash passwords and reset tokens
 const bcrypt = require("bcrypt");
 const amqp = require("amqplib/callback_api");
-
 
 // send password link
 router.post("/", async (req, res) => {
@@ -23,9 +24,7 @@ router.post("/", async (req, res) => {
 		let user = await User.findOne({ email: req.body.email });
 		console.log("user >> ", user);
 		if (!user)
-			return res
-				.status(409)
-				.send({ message: "User with given email does not exist!" });
+			return res.status(409).send({ message: "User with given email does not exist!" });
 
 		let token = await Token.findOne({ userId: user._id });
 		if (!token) {
@@ -34,7 +33,6 @@ router.post("/", async (req, res) => {
 				token: crypto.randomBytes(32).toString("hex"),
 			}).save();
 		}
-
 		const url = `${process.env.BASE_URL}password-reset/${user._id}/${token.token}/`;
 
 		// connect to amqp cloud
@@ -47,29 +45,24 @@ router.post("/", async (req, res) => {
 				if (err1)
 					throw err1;
 
-				channel.assertQueue("emailq", { durable: true });
-				channel.sendToQueue("emailq", Buffer.from(JSON.stringify({ "email": user.email, url })));
+				channel.assertQueue("email3", { durable: true });
+				channel.sendToQueue("email3", Buffer.from(JSON.stringify({ "email": user.email, url })));
 			}, { noAck: true });
 
 			// consumer
 			connection.createChannel((err1, channel) => {
 				if (err1)
 					throw err1;
-				// if queue is already present then use it
-				// or create a new queue
-				channel.assertQueue("emailq", { durable: true });
-				channel.consume("emailq", (msg) => {
+				// if queue is already present then use it or create a new queue
+				channel.assertQueue("email3", { durable: true });
+				channel.consume("email3", (msg) => {
 					const parsed = JSON.parse(msg.content.toString());
-					// console.log("Parsed data  = ", parsed);
 					sendEmail(parsed.email, "Password Reset", parsed.url);
 				});
 			}, { noAck: true });
 
 		})
-
-		res
-			.status(200)
-			.send({ message: "Password reset link sent to your email account" });
+		res.status(200).send({ message: "Password reset link sent to your email account" });
 	} catch (error) {
 		console.log(error);
 		res.status(500).send({ message: "Internal Server Error" });
@@ -96,7 +89,7 @@ router.get("/:id/:token", async (req, res) => {
 	}
 });
 
-//  set new password
+//  reset password
 router.post("/:id/:token", async (req, res) => {
 	try {
 		const passwordSchema = Joi.object({
@@ -120,10 +113,9 @@ router.post("/:id/:token", async (req, res) => {
 		const salt = await bcrypt.genSalt(Number(process.env.SALT));
 		const hashPassword = await bcrypt.hash(req.body.password, salt);
 
-		user.password = hashPassword;
+		user.password = hashPassword;//new password
 		await user.save();
 		await token.remove();
-
 		res.status(200).send({ message: "Password reset successfully" });
 	} catch (error) {
 		res.status(500).send({ message: "Internal Server Error" });
